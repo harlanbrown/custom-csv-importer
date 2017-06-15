@@ -19,34 +19,15 @@
 
 package org.nuxeo.sample;
 
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.jboss.seam.ScopeType;
 import org.jboss.seam.annotations.In;
 import org.jboss.seam.annotations.Install;
 import org.jboss.seam.annotations.Name;
-import org.jboss.seam.annotations.Observer;
 import org.jboss.seam.annotations.Scope;
-import org.nuxeo.ecm.csv.core.CSVImportLog;
-import org.nuxeo.ecm.csv.core.CSVImportResult;
-import org.nuxeo.ecm.csv.core.CSVImportStatus;
 import org.nuxeo.ecm.csv.core.CSVImporter;
 import org.nuxeo.ecm.csv.core.CSVImporterOptions;
-import org.nuxeo.ecm.csv.core.CSVImporterOptions.ImportMode;
 import org.nuxeo.ecm.csv.jsf.CSVImportActions;
-import org.nuxeo.ecm.core.api.CoreSession;
-import org.nuxeo.ecm.platform.ui.web.api.NavigationContext;
-import org.nuxeo.ecm.webapp.helpers.EventNames;
 import org.nuxeo.runtime.api.Framework;
-import org.richfaces.event.FileUploadEvent;
-import org.richfaces.model.UploadedFile;
-
-import java.io.File;
-import java.io.InputStream;
-import java.io.Serializable;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * @author <a href="mailto:troger@nuxeo.com">Thomas Roger</a>
@@ -59,58 +40,7 @@ public class CustomCSVImportActions extends CSVImportActions {
 
     private static final long serialVersionUID = 1L;
 
-    private static final Log log = LogFactory.getLog(CustomCSVImportActions.class);
-
-    @In(create = true, required = false)
-    protected transient CoreSession documentManager;
-
-    @In(create = true, required = false)
-    protected transient NavigationContext navigationContext;
-
-    protected File csvFile;
-
-    protected String csvFileName;
-
-    protected boolean notifyUserByEmail = false;
-
-    protected String csvImportId;
-
-    /**
-     * @since 8.4
-     */
-    protected Boolean useImportMode = false;
-
-    public boolean getNotifyUserByEmail() {
-        return notifyUserByEmail;
-    }
-
-    public void setNotifyUserByEmail(boolean notifyUserByEmail) {
-        this.notifyUserByEmail = notifyUserByEmail;
-    }
-
-    public Boolean getUseImportMode() {
-        return useImportMode;
-    }
-
-    public void setUseImportMode(Boolean importMode) {
-        this.useImportMode = importMode;
-    }
-
-    protected ImportMode getImportMode() {
-        return useImportMode ? ImportMode.IMPORT : ImportMode.CREATE;
-    }
-
-    public void uploadListener(FileUploadEvent event) throws Exception {
-        UploadedFile item = event.getUploadedFile();
-        // FIXME: check if this needs to be tracked for deletion
-        csvFile = Framework.createTempFile("FileManageActionsFile", null);
-        InputStream in = event.getUploadedFile().getInputStream();
-        org.nuxeo.common.utils.FileUtils.copyToFile(in, csvFile);
-        csvFileName = FilenameUtils.getName(item.getName());
-    }
-
     public void importCSVFile() {
-        log.error("hi from custom csv");
         if (csvFile != null) {
             CSVImporterOptions options = new CSVImporterOptions.Builder().sendEmail(notifyUserByEmail)
                                                                          .importMode(getImportMode())
@@ -120,49 +50,5 @@ public class CustomCSVImportActions extends CSVImportActions {
             csvImportId = csvImporter.launchImport(documentManager,
                     navigationContext.getCurrentDocument().getPathAsString(), csvFile, csvFileName, options);
         }
-    }
-
-    public String getImportingCSVFilename() {
-        return csvFileName;
-    }
-
-    public CSVImportStatus getImportStatus() {
-        if (csvImportId == null) {
-            return null;
-        }
-        CSVImporter csvImporter = Framework.getLocalService(CSVImporter.class);
-        return csvImporter.getImportStatus(csvImportId);
-    }
-
-    public List<CSVImportLog> getLastLogs(int maxLogs) {
-        if (csvImportId == null) {
-            return Collections.emptyList();
-        }
-        CSVImporter csvImporter = Framework.getLocalService(CSVImporter.class);
-        return csvImporter.getLastImportLogs(csvImportId, maxLogs);
-    }
-
-    public List<CSVImportLog> getSkippedAndErrorLogs() {
-        if (csvImportId == null) {
-            return Collections.emptyList();
-        }
-        CSVImporter csvImporter = Framework.getLocalService(CSVImporter.class);
-        return csvImporter.getImportLogs(csvImportId, CSVImportLog.Status.SKIPPED, CSVImportLog.Status.ERROR);
-    }
-
-    public CSVImportResult getImportResult() {
-        if (csvImportId == null) {
-            return null;
-        }
-        CSVImporter csvImporter = Framework.getService(CSVImporter.class);
-        return csvImporter.getImportResult(csvImportId);
-    }
-
-    @Observer(EventNames.NAVIGATE_TO_DOCUMENT)
-    public void resetState() {
-        csvFile = null;
-        csvFileName = null;
-        csvImportId = null;
-        notifyUserByEmail = false;
     }
 }

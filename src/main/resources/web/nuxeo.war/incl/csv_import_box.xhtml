@@ -18,6 +18,7 @@
     <div class="content">
       <jsp:useBean id="csv" scope="application" type="org.nuxeo.ecm.csv.core.CSVImporterImpl"/>
       <nxu:set var="importStatus" value="#{csv.importStatus}">
+      #{csv.importStatus}
         <nxu:set var="importScheduled" value="#{not empty importStatus and importStatus.isScheduled()}">
           <nxu:set var="importRunning" value="#{not empty importStatus and importStatus.isRunning()}">
             <nxu:set var="importComplete" value="#{not empty importStatus and importStatus.isComplete()}">
